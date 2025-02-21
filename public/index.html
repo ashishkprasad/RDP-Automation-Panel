@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RDP Automation Control Panel</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Connected RDPs</h2>
+    <ul id="clientList"></ul>
+  </div>
+  <div class="main-content">
+    <h1>RDP Automation Control Panel</h1>
+    <div class="input-section">
+      <input type="text" id="commandInput" placeholder="Enter command" autofocus>
+      <button onclick="sendCommand()">Send Command</button>
+    </div>
+    <h2>Logs</h2>
+    <div id="logs" class="log-container"></div>
+  </div>
+  <script>
+    const socket = io();
+
+    function sendCommand() {
+      const command = document.getElementById("commandInput").value.trim();
+      if (!command) {
+        alert("Enter a command!");
+        return;
+      }
+
+      fetch(`/send-command?command=${encodeURIComponent(command)}`)
+        .then(res => res.json())
+        .then(data => {
+          alert(data.message);
+          document.getElementById("commandInput").value = "";
+        })
+        .catch(err => alert("Error sending command"));
+    }
+
+    socket.on('log', (msg) => {
+      const logDiv = document.getElementById("logs");
+      const logEntry = document.createElement("p");
+      logEntry.textContent = msg;
+      logEntry.classList.add("log-entry");
+      logDiv.appendChild(logEntry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    });
+
+    socket.on('update-clients', (clients) => {
+      const clientList = document.getElementById("clientList");
+      clientList.innerHTML = '';
+      clients.forEach(client => {
+        const li = document.createElement("li");
+        li.textContent = client.ip;
+        clientList.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
